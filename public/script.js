@@ -7,7 +7,7 @@ myVideo.muted = true;
 var peer = new Peer(undefined, {
     path: '/peerjs', //Actual root defined in server.js
     host: '/', //Whatever host
-    port: 3030
+    port: '443'
 });
 let userInfo = {};
 //Our initial configuration for mic and camera
