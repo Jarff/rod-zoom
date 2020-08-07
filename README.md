@@ -8,4 +8,4 @@ This project is made with the intention of remembering this event by making a pr
 
 Built in NodeJS i'm using Socket.io and Peer.JS for communication
 
-If you want to use it, just clone and run npm install
+If you want to use it, just clone it and run npm install
