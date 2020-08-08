@@ -1,3 +1,5 @@
+const debug = true;
+
 const socket = io('/');
 const videoGrid = document.getElementById('video-grid');
 const myVideo = document.createElement('video');
@@ -7,9 +9,10 @@ myVideo.muted = true;
 var peer = new Peer(undefined, {
     path: '/peerjs', //Actual root defined in server.js
     host: '/', //Whatever host
-    port: '443'
+    port: (debug) ? 3030 : '443'
 });
 let userInfo = {};
+let users = [];
 //Our initial configuration for mic and camera
 const mediaConstraints = {video: true, audio: true};
 //Our global videoStream
@@ -32,8 +35,11 @@ var enumeratorPromise = navigator.mediaDevices.enumerateDevices().then(function(
 
                 //answer call from peer
                 peer.on('call', call => {
+                    console.log(users);
+                    console.log(call);
                     call.answer(stream);
                     const video = document.createElement('video');
+                    console.log('entra');
                     call.on('stream', (userVideoStream) => {
                         addVideoStream(video, userVideoStream);
                     });
@@ -50,19 +56,9 @@ var enumeratorPromise = navigator.mediaDevices.enumerateDevices().then(function(
 
                 form.addEventListener('submit', e => {
                     e.preventDefault();
-                    if((msg.value !== '') && (msg.value !== ' ')){
-                        socket.emit('message', msg.value);
-                        //We clear the input
-                        msg.value = '';
-                    }
-                });
-
-                //When the server emits the event
-                socket.on('createMessage', (message) => {
-                    let li_message = document.createElement('li');
-                    li_message.innerHTML = `<b>User: </b><br>${message}`;
-                    document.querySelector('.messages').append(li_message);
-                    scrollToBottom();
+                    sendMessage(msg.value);
+                    //We clear the input
+                    msg.value = '';
                 });
             })
             .catch((err) => {
@@ -78,11 +74,34 @@ peer.on('open', (id) => {
 });
 
 
+//When the server emits the event
+socket.on('createMessage', (message) => {
+    // let name = (users[userId]) ? users[userId].name : 'Internauta';
+    createMessage({name: "User", message: message});
+});
+
+//Listen for server Messages
+socket.on('serverMessage', (message, _users) => {
+    users = _users;
+    createMessage({message: message});
+});
+
+//We listen when a user disconnect the room
+socket.on('user-disconnected', (userId) => {
+    // if(users[userId]) users[userId].call.close();
+    document.getElementById(userId).parentNode.removeChild(document.getElementById(userId));
+});
+
 const connectToNewUser = (userId, stream) => {
+
     const call = peer.call(userId, stream);
     const video = document.createElement('video');
+    video.setAttribute('id', userId);
     call.on('stream', (userVideoStream) => {
         addVideoStream(video, userVideoStream);
+    });
+    call.on('close', () => {
+        video.remove;
     });
 }
 
@@ -165,4 +184,17 @@ const setPlayVideo = () => {
         <span>Play Video</span>
     `
     document.querySelector('.main__video_button').innerHTML = html;
+}
+
+const sendMessage = (message) => {
+    if((message !== '') && (message !== ' ')){
+        socket.emit('message', message);
+    }
+}
+
+const createMessage = (obj = {name, message}) => {
+    let li_message = document.createElement('li');
+    li_message.innerHTML = `<b>${(obj.name) ? obj.name+':' : ''} </b><br>${obj.message}`;
+    document.querySelector('.messages').append(li_message);
+    scrollToBottom();
 }
